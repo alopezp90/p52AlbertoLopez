@@ -2,6 +2,8 @@ package rentacar;
 
 import java.awt.Color;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -13,7 +15,8 @@ public class Empresa {
 
     private ArrayList<Cliente> clientes;
     private ArrayList<Vehiculo> vehiculos;
-    private ArrayList<VehiculoAlquilado> alquilados;
+    private ArrayList<VehiculoAlquilado> alquileresActivos;
+    private ArrayList<VehiculoAlquilado> alquileresFinalizados;
     private String cif;
     private String nombre;
     private String paginaWeb;
@@ -24,7 +27,8 @@ public class Empresa {
         this.paginaWeb = paginaWeb;
         this.clientes = new ArrayList<>();
         this.vehiculos = new ArrayList<>();
-        this.alquilados = new ArrayList<>();
+        this.alquileresActivos = new ArrayList<>();
+        this.alquileresFinalizados = new ArrayList<>();
     }
 
     public ArrayList<Cliente> getClientes() {
@@ -43,12 +47,20 @@ public class Empresa {
         this.vehiculos = vehiculos;
     }
 
-    public ArrayList<VehiculoAlquilado> getAlquilados() {
-        return alquilados;
+    public ArrayList<VehiculoAlquilado> getAlquileresActivos() {
+        return alquileresActivos;
     }
 
-    public void setAlquilados(ArrayList<VehiculoAlquilado> alquilados) {
-        this.alquilados = alquilados;
+    public void setAlquileresActivos(ArrayList<VehiculoAlquilado> alquileresActivos) {
+        this.alquileresActivos = alquileresActivos;
+    }
+
+    public ArrayList<VehiculoAlquilado> getAlquileresFinalizados() {
+        return alquileresFinalizados;
+    }
+
+    public void setAlquileresFinalizados(ArrayList<VehiculoAlquilado> alquileresFinalizados) {
+        this.alquileresFinalizados = alquileresFinalizados;
     }
 
     //te dice el cuantos clientes y vehículos hay
@@ -61,7 +73,7 @@ public class Empresa {
     }
 
     public int totalalquilados() {
-        return alquilados.size();
+        return alquileresActivos.size();
     }
 
     public void registrarCliente(Cliente nuevo) {
@@ -72,18 +84,30 @@ public class Empresa {
         vehiculos.add(nuevo);
     }
 
-    public void registrarAlquiler(String nif, String matricula, int dias) {
+    public void registrarAlquiler(String nif, String matricula, LocalDate fechaAlquiler, int dias) {
+        ordenaPorNif();
+        ordenaPorMatricula();
         if (buscarPorNif(nif) >= 0 && buscarPorMatricula(matricula) >= 0) {
-            alquilados.add(new VehiculoAlquilado(clientes.get(buscarPorNif(nif)),
+            alquileresActivos.add(new VehiculoAlquilado(clientes.get(buscarPorNif(nif)),
                     vehiculos.get(buscarPorMatricula(matricula)),
-                    LocalDate.now(),
+                    fechaAlquiler,
                     dias));
         }
         vehiculos.get(buscarPorMatricula(matricula)).setDisponible(false);
     }
 
+    public void finalizarAlquiler(VehiculoAlquilado alquiler) {
+        alquileresFinalizados.add(alquiler);
+        alquileresActivos.remove(alquiler);
+        ordenaPorMatricula();
+        vehiculos.get(buscarPorMatricula(alquiler.getVehiculo().getMatricula())).setDisponible(true);
+        alquileresFinalizados.get(alquileresFinalizados.indexOf(alquiler)).setTotalDiasAlquiler((int) ChronoUnit.DAYS.between(
+                alquileresFinalizados.get(alquileresFinalizados.indexOf(alquiler)).getFechaAlquiler(), LocalDate.now()));
+    }
+
     public void retornoVehiculo(String matricula) {
-        alquilados.remove(buscarPorMatricula(matricula));
+        ordenaAlquilerActivoPorMatricula();
+        alquileresFinalizados.add(alquileresActivos.remove(buscarPorMatricula(matricula)));
         vehiculos.get(buscarPorMatricula(matricula)).setDisponible(true);
     }
 
@@ -91,8 +115,11 @@ public class Empresa {
         Collections.sort(clientes, (c1, c2) -> c1.getNif().compareTo(c2.getNif()));
     }
 
+    public void ordenaPorNombre() {
+        Collections.sort(clientes, (c1, c2) -> c1.getNombre().compareTo(c2.getNombre()));
+    }
+
     public int buscarPorNif(String nif) {
-        ordenaPorNif();
         Cliente c = new Cliente(nif, "", "");
         int posicion = Collections.binarySearch(clientes, c, (c1, c2) -> c1.getNif().compareTo(c2.getNif()));
         return posicion;
@@ -104,12 +131,33 @@ public class Empresa {
         }
     }
 
+    public void ordenaAlquilerActivoPorMatricula() {
+        Collections.sort(alquileresActivos, (c1, c2) -> c1.getVehiculo().getMatricula().compareTo(c2.getVehiculo().getMatricula()));
+    }
+
+    public void ordenaAlquilerActivoPorNif() {
+        Collections.sort(alquileresActivos, (c1, c2) -> c1.getCliente().getNif().compareTo(c2.getCliente().getNif()));
+    }
+
+    public void ordenaAlquilerActivoPorFecha() {
+        Collections.sort(alquileresActivos, (c1, c2) -> c1.getFechaAlquiler().compareTo(c2.getFechaAlquiler()));
+    }
+
+    public int buscarAlquilerActivoPorMatricula(String matricula) {
+        VehiculoAlquilado c = new VehiculoAlquilado(new Cliente("", "", ""), new Vehiculo(matricula, "", "", Color.BLACK, 0, true), LocalDate.now(), 0);
+        int posicion = Collections.binarySearch(alquileresActivos, c, (c1, c2) -> c1.getVehiculo().getMatricula().compareTo(c2.getVehiculo().getMatricula()));
+        return posicion;
+    }
+
     public void ordenaPorMatricula() {
         Collections.sort(vehiculos, (c1, c2) -> c1.getMatricula().compareTo(c2.getMatricula()));
     }
 
+    public void ordenaPorTarifa() {
+        Collections.sort(vehiculos, (c1, c2) -> new Double(c1.getTarifa()).compareTo(c2.getTarifa()));
+    }
+
     public int buscarPorMatricula(String matricula) {
-        ordenaPorMatricula();
         Vehiculo c = new Vehiculo(matricula, "", "", Color.BLACK, 0, true);
         int posicion = Collections.binarySearch(vehiculos, c, (c1, c2) -> c1.getMatricula().compareTo(c2.getMatricula()));
         return posicion;
@@ -122,18 +170,44 @@ public class Empresa {
     }
 
     public void imprimirAlquileres() {
-        for (VehiculoAlquilado alquiler : alquilados) {
+        for (VehiculoAlquilado alquiler : alquileresActivos) {
             System.out.println(alquiler.toString());
         }
     }
 
     public void imprimeDevoluciones() {
-        if (alquilados.isEmpty()) {
+        if (alquileresActivos.isEmpty()) {
             System.out.println("No hay alquileres pendientes.");
         } else {
-            for (VehiculoAlquilado alquiler : alquilados) {
+            for (VehiculoAlquilado alquiler : alquileresActivos) {
                 System.out.println("Matricula: " + alquiler.getVehiculo().getMatricula() + "\tFecha devolucion: " + alquiler.fechaRetorno());
             }
+        }
+    }
+
+    public ArrayList<VehiculoAlquilado> alquileresCliente(String nif) {
+        ArrayList<VehiculoAlquilado> tmp = new ArrayList<>();
+
+        for (VehiculoAlquilado alquiler : alquileresFinalizados) {
+            if (alquiler.getCliente().getNif().equals(nif)) {
+                tmp.add(alquiler);
+            }
+        }
+        for (VehiculoAlquilado alquiler : alquileresActivos) {
+            if (alquiler.getCliente().getNif().equals(nif)) {
+                tmp.add(alquiler);
+            }
+        }
+        return tmp;
+    }
+
+    public void imprimeGanancias() {
+        DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        for (VehiculoAlquilado alquiler : alquileresFinalizados) {
+            System.out.println(alquiler.getCliente().getNif() + " ** " + alquiler.getVehiculo().getMatricula()
+                    + " ** Desde " + alquiler.getFechaAlquiler().format(formato) + " hasta "
+                    + alquiler.getFechaAlquiler().plusDays((long) alquiler.getTotalDiasAlquiler())
+                    + " ** Ganancia: " + alquiler.getVehiculo().getTarifa() * alquiler.getTotalDiasAlquiler() + " euros.");
         }
     }
 }
