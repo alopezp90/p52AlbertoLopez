@@ -63,6 +63,7 @@ public class RentACar {
         easydrive.finalizarAlquiler(easydrive.getAlquileresActivos().get(2));
         
         //imprime ganancias
+        System.out.println("--------------------Ganancias----------------------");
         easydrive.imprimeGanancias();
     }
 }

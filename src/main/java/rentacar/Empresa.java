@@ -154,7 +154,7 @@ public class Empresa {
     }
 
     public void ordenaPorTarifa() {
-        Collections.sort(vehiculos, (c1, c2) -> new Double(c1.getTarifa()).compareTo(c2.getTarifa()));
+        Collections.sort(vehiculos, (c1, c2) -> (int)(c1.getTarifa() - c2.getTarifa()));
     }
 
     public int buscarPorMatricula(String matricula) {
@@ -188,11 +188,6 @@ public class Empresa {
     public ArrayList<VehiculoAlquilado> alquileresCliente(String nif) {
         ArrayList<VehiculoAlquilado> tmp = new ArrayList<>();
 
-        for (VehiculoAlquilado alquiler : alquileresFinalizados) {
-            if (alquiler.getCliente().getNif().equals(nif)) {
-                tmp.add(alquiler);
-            }
-        }
         for (VehiculoAlquilado alquiler : alquileresActivos) {
             if (alquiler.getCliente().getNif().equals(nif)) {
                 tmp.add(alquiler);
