@@ -201,7 +201,7 @@ public class Empresa {
         for (VehiculoAlquilado alquiler : alquileresFinalizados) {
             System.out.println(alquiler.getCliente().getNif() + " ** " + alquiler.getVehiculo().getMatricula()
                     + " ** Desde " + alquiler.getFechaAlquiler().format(formato) + " hasta "
-                    + alquiler.getFechaAlquiler().plusDays((long) alquiler.getTotalDiasAlquiler())
+                    + alquiler.getFechaAlquiler().plusDays((long) alquiler.getTotalDiasAlquiler()).format(formato)
                     + " ** Ganancia: " + alquiler.getVehiculo().getTarifa() * alquiler.getTotalDiasAlquiler() + " euros.");
         }
     }
